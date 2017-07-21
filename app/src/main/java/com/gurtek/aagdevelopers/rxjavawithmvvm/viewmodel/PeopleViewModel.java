@@ -4,6 +4,7 @@ import android.content.Context;
 import android.databinding.BindingAdapter;
 import android.databinding.ObservableField;
 import android.databinding.ObservableInt;
+import android.net.Uri;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -12,6 +13,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.gurtek.aagdevelopers.rxjavawithmvvm.PeopleApplication;
+import com.gurtek.aagdevelopers.rxjavawithmvvm.model.UserInfo;
 import com.gurtek.aagdevelopers.rxjavawithmvvm.model.UserInfoModel;
 import com.gurtek.aagdevelopers.rxjavawithmvvm.network.PeopleDataApi;
 
@@ -20,6 +22,7 @@ import io.reactivex.ObservableSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -52,7 +55,7 @@ public class PeopleViewModel {
         this.context = context;
         bottomView=new ObservableInt(View.GONE);
         userImage=new ObservableInt(View.GONE);
-        progreebar=new ObservableInt(View.VISIBLE);
+        progreebar=new ObservableInt(View.GONE);
 
 
 
@@ -61,57 +64,41 @@ public class PeopleViewModel {
 
     public void findUserByemail(String email){
 
+        progreebar.set(View.VISIBLE);
+
         peopleApi.getPeopleInfo(email,API_KEY)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.computation())
-                .flatMap(new Function<JsonElement, ObservableSource<? extends UserInfoModel>>() {
+                .filter(new Predicate<UserInfo>() {
                     @Override
-                    public ObservableSource<? extends UserInfoModel> apply(JsonElement jsonElement) throws Exception {
-
-                        UserInfoModel model=new UserInfoModel();
-
-                        JsonObject parentObject = jsonElement.getAsJsonObject();
-
-                        JsonArray photos = parentObject.getAsJsonArray("photos");
-                        JsonObject childPhoto = photos.get(0).getAsJsonObject();
-                        model.userImageUrl = childPhoto.get("url").getAsString();
-
-                        JsonObject childInfo = parentObject.getAsJsonObject("contactInfo");
-
-                        model.userFamilyName=childInfo.get("familyName").getAsString();
-                        model.userName=childInfo.get("fullName").getAsString();
-                        model.userGivenName=childInfo.get("givenName").getAsString();
-
-                        JsonObject childLocation = parentObject.getAsJsonObject("demographics");
-                        JsonObject childofLocation = childLocation.getAsJsonObject("locationDeduced");
-                        model.userLocation= childofLocation.get("deducedLocation").getAsString();
-
-
-
-                        return Observable.just( model);
+                    public boolean test(UserInfo userInfo) throws Exception {
+                        return userInfo.contactInfo!=null;
                     }
                 })
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<UserInfoModel>() {
-            @Override
-            public void accept(UserInfoModel userInfoModel) throws Exception {
-                progreebar.set(View.GONE);
-                bottomView.set(View.VISIBLE);
-                if (userInfoModel.userImageUrl.length() > 0) userImage.set(View.VISIBLE);
+                .subscribe(new Consumer<UserInfo>() {
+                    @Override
+                    public void accept(UserInfo userInfo) throws Exception {
 
-                username.set(userInfoModel.userName);
-                givenname.set(userInfoModel.userGivenName);
-                familyname.set(userInfoModel.userFamilyName);
-                userlocation.set(userInfoModel.userLocation);
-                userImageUrl.set(userInfoModel.userImageUrl);
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
+                        progreebar.set(View.GONE);
+                        bottomView.set(View.VISIBLE);
 
-                Log.e("Error","Error"+throwable);
-            }
-        });
+                        if (userInfo.photos!=null&& userInfo.photos.get(0)!=null)
+                            userImage.set(View.VISIBLE);
+
+                        if (userInfo.contactInfo!=null) {
+                            username.set(userInfo.contactInfo.fullName);
+                            givenname.set(userInfo.contactInfo.givenName);
+                            familyname.set(userInfo.contactInfo.familyName);
+                        }
+
+                       if (userInfo.demographics!=null && userInfo.demographics.locationGeneral!=null)
+                           userlocation.set(userInfo.demographics.locationGeneral);
+                        if (userInfo.photos!=null && userInfo.photos.get(0)!=null)
+                        userImageUrl.set(userInfo.photos.get(0).url);
+
+                    }
+                });
+
 
     }
 
@@ -139,8 +126,12 @@ public class PeopleViewModel {
     }
 
 
-    @BindingAdapter("imageUrl") public static void setImageUrl(ImageView imageView, String url) {
-       // Glide.with(imageView.getContext()).load(url).into(imageView);
+    @BindingAdapter("android:imageurl")
+    public static void setImageUrl(ImageView imageView, String url) {
+        if (url!=null) {
+            Uri uri = Uri.parse(url);
+            imageView.setImageURI(uri);
+        }
     }
 
 

@@ -1,6 +1,7 @@
 package com.gurtek.aagdevelopers.rxjavawithmvvm.network;
 
 import com.google.gson.JsonElement;
+import com.gurtek.aagdevelopers.rxjavawithmvvm.model.UserInfo;
 
 import io.reactivex.Observable;
 import retrofit2.http.GET;
@@ -17,7 +18,7 @@ public interface PeopleDataApi {
     /*https://api.fullcontact.com/v2/person.json?email=kapillikes@gmail.com&apiKey=a315862323a7d6da*/
 
     @GET("person.json")
-    Observable<JsonElement> getPeopleInfo(
+    Observable<UserInfo> getPeopleInfo(
             @Query("email") String email,
             @Query("apiKey") String apiKey);
 

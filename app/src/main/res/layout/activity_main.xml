@@ -43,13 +43,24 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="@{peopleviewmodel.bottomView}"
+
             >
+
+            <com.facebook.drawee.view.SimpleDraweeView
+                android:id="@+id/my_image_view"
+                android:layout_width="130dp"
+                android:layout_height="130dp"
+                android:imageurl="@{peopleviewmodel.userImageUrl}"
+                android:visibility="@{peopleviewmodel.userImage}"
+                app:roundAsCircle="true"
+                android:layout_gravity="center"
+                />
 
         <ImageView
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_gravity="center"
-            android:visibility="@{peopleviewmodel.userImage}"
+
 
             />
 
